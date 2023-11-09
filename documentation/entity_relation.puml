@@ -1,0 +1,60 @@
+@startuml zerobased-ERD 
+
+entity "accounts" {
+  *id: serial primary key
+  *name: varchar
+  *internal: boolean
+  *type: accounts_type
+  *active: boolean
+}
+
+together {
+entity "master_categories" {
+  *id: serial primary key
+  *name: varchar
+  *active: boolean
+}
+
+entity "categories" {
+  *id: serial primary key
+  *master_id: integer
+  *name: varchar
+  *active: boolean
+}
+}
+
+together {
+entity "transactions" {
+  *id: serial primary key
+  *primary_account_id: integer
+  *date: date
+  *cleared: boolean
+  *reconciled: boolean
+}
+
+entity "transaction_parts" {
+  *id: serial primary key
+  *parent_id: integer
+  *secondary_account_id: integer
+  *category_id: integer
+  *credit: money
+  *debit: money
+  *memo: varchar
+}
+
+entity "assignment_ledger" {
+  *id: serial primary key
+  *category_id: integer
+  *credit: money
+  *debit: money
+  *date: date
+}
+}
+
+accounts::id ||--|{ transactions::primary_account_id
+accounts::id ||--|{ transaction_parts::secondary_account_id
+categories::master }o--|| master_categories::id
+categories::id ||--o{ transaction_parts::category_id
+categories::id ||--o{ assignment_ledger::category_id
+transactions::id ||--|{ transaction_parts::parent_id
+@enduml

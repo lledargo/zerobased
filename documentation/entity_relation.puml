@@ -42,7 +42,7 @@ entity "transaction_parts" {
   *memo: varchar
 }
 
-entity "assignment_ledger" {
+entity "assignments" {
   *id: serial primary key
   *category_id: integer
   *credit: money
@@ -55,6 +55,6 @@ accounts::id ||--|{ transactions::primary_account_id
 accounts::id ||--|{ transaction_parts::secondary_account_id
 categories::master }o--|| master_categories::id
 categories::id ||--o{ transaction_parts::category_id
-categories::id ||--o{ assignment_ledger::category_id
+categories::id ||--o{ assignments::category_id
 transactions::id ||--|{ transaction_parts::parent_id
 @enduml

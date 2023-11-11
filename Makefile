@@ -6,7 +6,7 @@ endif
 clean:
 	podman rm -f pgtap-container
 	podman rmi -f localhost/pgtap:latest
-ifeq ($(podman ps -a | grep "docker.io/library/postgres:16"),)
+ifeq ($(shell podman ps -a | grep "docker.io/library/postgres:16"),)
 	podman rmi -f docker.io/library/postgres:16
 endif
 

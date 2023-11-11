@@ -2,10 +2,24 @@ ifndef VERBOSE
 .SILENT:
 endif
 
-pgtap-image:
-	podman build -t pgtap -f ./development/containers/pgtap.dockerfile
+.PHONY: clean
+clean:
+	podman rm -f pgtap-container
+	podman rmi -f localhost/pgtap:latest
+ifeq ($(podman ps -a | grep "docker.io/library/postgres:16"),)
+	podman rmi -f docker.io/library/postgres:16
+endif
 
-pgtap-tests:
+.PHONY: pgtap-image
+pgtap-image:	
+ifeq ($(shell podman images -q localhost/pgtap:latest),)
+	podman build -t pgtap -f ./development/containers/pgtap.dockerfile
+else
+	echo "using existing pgtap container image"
+endif
+
+.PHONY: pgtap-tests
+pgtap-tests: pgtap-image
 	podman run --rm --detach \
 	--name=pgtap-container \
 	--volume ./database/:/scripts/:Z \

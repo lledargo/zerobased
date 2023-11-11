@@ -29,9 +29,9 @@ CREATE TABLE transactions (
     reconciled BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE transaction_part (
+CREATE TABLE transaction_parts (
     id SERIAL PRIMARY KEY,
-    parent INTEGER,
+    parent_id INTEGER,
     secondary_account_id INTEGER,
     category_id INTEGER DEFAULT 1,
     credit MONEY,

@@ -1,14 +1,34 @@
+ifeq ($(shell ls local.mk 2> /dev/null),local.mk)
+include local.mk
+endif
+
 ifndef VERBOSE
 .SILENT:
 endif
 
+.PHONY:default
+default: pgtap-tests
+
 .PHONY: clean
 clean:
+#containers
 	podman rm -f pgtap-container
+	podman rm -f zbdb-dev
+#pods
+	podman pod rm -f zb-dev
+#persistent volumes
+	if [[ $$(podman volume ls -qf name=zbdb-data) == "zbdb-data" ]]; \
+	then podman volume rm zbdb-data; fi
+#images
+ifndef KEEP_ALL_IMGS
 	podman rmi -f localhost/pgtap:latest
-ifeq ($(shell podman ps -a | grep "docker.io/library/postgres:16"),)
-	podman rmi -f docker.io/library/postgres:16
+ifndef KEEP_BASE_IMGS
+	if [[ $$(podman ps -a | grep "docker.io/library/postgres:16") == "" ]]; \
+	then podman rmi -f docker.io/library/postgres:16; fi
 endif
+endif
+# files and directories
+	rm -rf development/var
 
 .PHONY: pgtap-image
 pgtap-image:	
@@ -36,3 +56,18 @@ pgtap-tests: pgtap-image
 	echo
 	echo "throwing out test database..."
 	podman rm -f pgtap-container > /dev/null
+
+.PHONY: dev-deploy
+dev-deploy:
+	if [[ ! -d ./development/var/pgdata ]]; then mkdir -p development/var/pgdata; fi
+	podman pod create --name=zb-dev -p 8080:8080 -p 4200:4200
+	podman run --rm --detach \
+	--pod=zb-dev \
+	--name=zbdb-dev \
+	--volume ./database/:/scripts/:Z \
+	--volume zbdb-data:/var/lib/postgresql/data:Z \
+	--env POSTGRES_USER=test \
+	--env POSTGRES_PASSWORD=testpass \
+	postgres:16
+	sleep 5
+	podman exec -it zbdb-dev psql -U test -Xf /scripts/dbinit.sql

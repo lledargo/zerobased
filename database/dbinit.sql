@@ -1,3 +1,14 @@
+CREATE ROLE zerobased LOGIN;
+
+CREATE DATABASE zerobased OWNER zerobased;
+
+\connect zerobased zerobased
+CREATE SCHEMA default_budget;
+
+ALTER ROLE zerobased IN DATABASE zerobased SET search_path TO default_budget, public;
+/* reconnect so postgres uses our new search path */
+\connect zerobased zerobased 
+
 CREATE TYPE account_types AS ENUM ('checking','saving','cash','credit card','line of credit','loan','asset','liability','external','special');
 
 CREATE TABLE accounts (

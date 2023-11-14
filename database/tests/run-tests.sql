@@ -11,9 +11,15 @@
 \set ON_ERROR_ROLLBACK 1
 \set ON_ERROR_STOP true
 
--- Load the TAP functions.
+-- Load pgTAP and run the tests.
 BEGIN;
 \i /usr/share/postgresql/16/extension/pgtap.sql
 \i /scripts/tests/pgtap-test.sql
 \i /scripts/tests/schema.sql
+\i /scripts/tests/accounts.sql
+\i /scripts/tests/master_categories.sql
+\i /scripts/tests/categories.sql
+\i /scripts/tests/transactions.sql
+\i /scripts/tests/transaction_parts.sql
+\i /scripts/tests/assignments.sql
 ROLLBACK;

@@ -43,16 +43,17 @@ pgtap-tests: pgtap-image
 	podman run --rm --detach \
 	--name=pgtap-container \
 	--volume ./database/:/scripts/:Z \
-	--env POSTGRES_USER=test \
+	--env POSTGRES_USER=postgres \
 	--env POSTGRES_PASSWORD=testpass \
 	pgtap > /dev/null
 #TODO: actually check if the db is up yet.
 	echo "creating test database..."
 	sleep 5
-	podman exec -it pgtap-container psql -U test -Xf /scripts/dbinit.sql > /dev/null
+	podman exec -it pgtap-container psql -U postgres -Xf /scripts/dbinit.sql > /dev/null
 	echo "running tests..."
 	echo
-	podman exec -it pgtap-container psql -U test -Xf /scripts/tests/run-tests.sql
+	podman exec -it pgtap-container psql -U postgres -d zerobased -c 'ALTER ROLE postgres IN DATABASE zerobased SET search_path to default_budget, public;'
+	podman exec -it pgtap-container psql -U postgres -d zerobased -Xf /scripts/tests/run-tests.sql
 	echo
 	echo "throwing out test database..."
 	podman rm -f pgtap-container > /dev/null
@@ -66,8 +67,8 @@ dev-deploy:
 	--name=zbdb-dev \
 	--volume ./database/:/scripts/:Z \
 	--volume zbdb-data:/var/lib/postgresql/data:Z \
-	--env POSTGRES_USER=test \
+	--env POSTGRES_USER=postgres \
 	--env POSTGRES_PASSWORD=testpass \
 	postgres:16
 	sleep 5
-	podman exec -it zbdb-dev psql -U test -Xf /scripts/dbinit.sql
+	podman exec -it zbdb-dev psql -U postgres -Xf /scripts/dbinit.sql

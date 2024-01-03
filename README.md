@@ -9,6 +9,7 @@ A zero based budgeting application
 Some make receipes are defined to help with the development workflow.
 
 - `clean` - removes any thing make may have created (i.e. contianers, pods, container images and volumes, files/directories)
+- `make tests` - Runs all tests (Deno, and Postgres).
 - `pgtap-tests` - Runs database unit tests on a test database
 - `dev-deploy` - Provisions a pod (zb-dev) with a development database in a container (zbdb-dev), and eventually the rest of the app.
 
@@ -26,3 +27,7 @@ The following options are off by default and enabled when defined:
 #### Database unit testing
 
 Database unit tests use the pgTAP framework and can be found in `./database/tests/`. You can easily spin up a container in podman, with pgTAP installed and run the tests with the help of some make receipes. Run `make pgtap-tests` to instantiate a container and run the tests. `pgtap-tests` will also run the `pgtap-image` target which builds the pgTAP container image if it does not already exist.
+
+#### Deno API unit testing
+
+API tests are performed by deno's built in testing framework. superoak is used to run the app and mock requests. `deno task test` in the api directory will run the tests using the `--allow-net` option; doing so will some ephemeral ports for a short period. The Makefile in the project root directory  inculdes a `deno-tests` receipe to run the tests.

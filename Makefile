@@ -38,6 +38,9 @@ else
 	echo "using existing pgtap container image"
 endif
 
+.PHONY: tests
+tests: pgtap-tests deno-tests
+
 .PHONY: pgtap-tests
 pgtap-tests: pgtap-image
 	podman run --rm --detach \
@@ -57,6 +60,10 @@ pgtap-tests: pgtap-image
 	echo
 	echo "throwing out test database..."
 	podman rm -f pgtap-container > /dev/null
+
+.PHONY: deno-tests
+deno-tests:
+	cd api; deno task test
 
 .PHONY: dev-deploy
 dev-deploy:

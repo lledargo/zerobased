@@ -3,6 +3,17 @@ A zero based budgeting application
 
 ## Developement Notes
 
+#### Deno and VSCode
+
+There is a language server client which adds support for deno to VSCode. https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno
+It is possible to enable globablly, but you can enable it for this project only by adding the following to `./.vscode/settings.json`
+```
+{
+  "deno.enable": true,
+  "deno.enablePaths": ["./api"]
+}
+```
+
 ### Using Make
 #### Receipes overview
 
@@ -10,8 +21,7 @@ Some make receipes are defined to help with the development workflow.
 
 - `clean` - removes any thing make may have created (i.e. contianers, pods, container images and volumes, files/directories)
 - `make tests` - Runs all tests (Deno, and Postgres).
-- `pgtap-tests` - Runs database unit tests on a test database
-- `dev-deploy` - Provisions a pod (zb-dev) with a development database in a container (zbdb-dev), and eventually the rest of the app.
+- `dev-deploy` - Provisions a pod (zb-dev) with a development database in a container (zbdb-dev), and a development API in a container (zbapi-dev).
 
 #### Make options
 
@@ -21,7 +31,7 @@ The following options are off by default and enabled when defined:
 
 - `VERBOSE` - Disables the `.SILENT` special target, which prevents make from echoing the receipe steps as it runs.
 - `KEEP_ALL_IMGS` - Skips the portion of `make clean` which deletes container images, including base images.
-- `KEEP_BASE_IMGS` - Skips the portion of `make clean` which deletes base container images. (i.e `postgres:16`)
+- `KEEP_BASE_IMGS` - Skips the portion of `make clean` which deletes base container images. (i.e `postgres:16`,`deno:latest`)
 
 ### Tests
 #### Database unit testing

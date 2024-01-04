@@ -14,6 +14,7 @@ clean:
 #containers
 	podman rm -f pgtap-container
 	podman rm -f zbdb-dev
+	podman rm -f zbapi-dev
 #pods
 	podman pod rm -f zb-dev
 #persistent volumes
@@ -25,6 +26,8 @@ ifndef KEEP_ALL_IMGS
 ifndef KEEP_BASE_IMGS
 	if [[ $$(podman ps -a | grep "docker.io/library/postgres:16") == "" ]]; \
 	then podman rmi -f docker.io/library/postgres:16; fi
+	if [[ $$(podman ps -a | grep "docker.io/denoland/deno:latest") == "" ]]; \
+	then podman rmi -f docker.io/denoland/deno:latest; fi
 endif
 endif
 # files and directories
@@ -66,9 +69,15 @@ deno-tests:
 	cd api; deno task test
 
 .PHONY: dev-deploy
-dev-deploy:
-	if [[ ! -d ./development/var/pgdata ]]; then mkdir -p development/var/pgdata; fi
+dev-deploy: dev-pod dev-db dev-api
+
+.PHONY: dev-pod
+dev-pod:
 	podman pod create --name=zb-dev -p 8080:8080 -p 4200:4200
+
+.PHONY: dev-db
+dev-db: dev-pod
+	if [[ ! -d ./development/var/pgdata ]]; then mkdir -p development/var/pgdata; fi
 	podman run --rm --detach \
 	--pod=zb-dev \
 	--name=zbdb-dev \
@@ -79,3 +88,20 @@ dev-deploy:
 	postgres:16
 	sleep 5
 	podman exec -it zbdb-dev psql -U postgres -Xf /scripts/dbinit.sql
+
+.PHONY: dev-api
+dev-api: dev-pod
+	podman run \
+    --rm --detach \
+		--pod=zb-dev \
+		--name=zbapi-dev \
+    --volume ./api:/app:Z \
+    --volume ~/.deno:/deno-dir:Z \
+    --workdir /app \
+    -e PGUSER=zerobased \
+		-e PGDATABASE=zerobased \
+		-e PGHOST=localhost \
+		-e PGPASSWORD=testpass \
+		-e PGPORT=5432 \
+    denoland/deno:latest \
+    deno run --watch --allow-net --allow-env --allow-read server.ts

@@ -7,12 +7,13 @@ ifndef VERBOSE
 endif
 
 .PHONY:default
-default: pgtap-tests
+default: dev-deploy
 
 .PHONY: clean
 clean:
 #containers
-	podman rm -f pgtap-container
+	podman rm -f zb-pgtap-test
+	podman rm -f zb-deno-test
 	podman rm -f zbdb-dev
 	podman rm -f zbapi-dev
 #pods
@@ -33,6 +34,10 @@ endif
 # files and directories
 	rm -rf development/var
 
+###
+#container image receipes
+###
+
 .PHONY: pgtap-image
 pgtap-image:	
 ifeq ($(shell podman images -q localhost/pgtap:latest),)
@@ -41,32 +46,47 @@ else
 	echo "using existing pgtap container image"
 endif
 
+###
+#test receipes
+###
+
 .PHONY: tests
 tests: pgtap-tests deno-tests
 
 .PHONY: pgtap-tests
 pgtap-tests: pgtap-image
 	podman run --rm --detach \
-	--name=pgtap-container \
+	--name=zb-pgtap-test \
 	--volume ./database/:/scripts/:Z \
 	--env POSTGRES_USER=postgres \
 	--env POSTGRES_PASSWORD=testpass \
-	pgtap > /dev/null
+	localhost/pgtap:latest > /dev/null
 #TODO: actually check if the db is up yet.
 	echo "creating test database..."
 	sleep 5
-	podman exec -it pgtap-container psql -U postgres -Xf /scripts/dbinit.sql > /dev/null
+	podman exec -it zb-pgtap-test psql -U postgres -Xf /scripts/dbinit.sql > /dev/null
 	echo "running tests..."
 	echo
-	podman exec -it pgtap-container psql -U postgres -d zerobased -c 'ALTER ROLE postgres IN DATABASE zerobased SET search_path to default_budget, public;'
-	podman exec -it pgtap-container psql -U postgres -d zerobased -Xf /scripts/tests/run-tests.sql
+	podman exec -it zb-pgtap-test psql -U postgres -d zerobased -c 'ALTER ROLE postgres IN DATABASE zerobased SET search_path to default_budget, public;'
+	podman exec -it zb-pgtap-test psql -U postgres -d zerobased -Xf /scripts/tests/run-tests.sql
 	echo
 	echo "throwing out test database..."
-	podman rm -f pgtap-container > /dev/null
+	podman rm -f zb-pgtap-test > /dev/null
 
 .PHONY: deno-tests
 deno-tests:
-	cd api; deno task test
+	podman run \
+		--rm --interactive --tty \
+		--name=zb-deno-test \
+    --volume ./api:/app:Z \
+    --volume ./api/.deno:/deno-dir:Z \
+    --workdir /app \
+    denoland/deno:latest \
+		deno test --allow-net
+
+###
+#dev receipes
+###
 
 .PHONY: dev-deploy
 dev-deploy: dev-pod dev-db dev-api
@@ -96,7 +116,7 @@ dev-api: dev-pod
 		--pod=zb-dev \
 		--name=zbapi-dev \
     --volume ./api:/app:Z \
-    --volume ~/.deno:/deno-dir:Z \
+    --volume ./api/.deno:/deno-dir:Z \
     --workdir /app \
     -e PGUSER=zerobased \
 		-e PGDATABASE=zerobased \

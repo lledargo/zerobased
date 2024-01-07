@@ -1,6 +1,5 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-net server.ts",
-    "test": "deno test --allow-net"
+    "dev": "deno run --watch --allow-net server.ts"
   }
 }

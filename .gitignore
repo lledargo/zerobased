@@ -1,6 +1,5 @@
 local.mk
 .vscode
-deno.lock
 
 api/.deno/*
 

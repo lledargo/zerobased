@@ -1,11 +1,23 @@
 # zerobased
 A zero based budgeting application
 
+## Configuration Notes
+
+### API
+
+The API's postgresql connection can be configured with some environment variables:
+
+- `PGDATABASE`
+- `PGHOST`
+- `PGUSER`
+- `PGPASSWORD`
+- `PGPORT`
+
 ## Developement Notes
 
 #### Deno and VSCode
 
-There is a language server client which adds support for deno to VSCode. https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno
+There is a language server client which adds support for deno to VSCode. https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno 
 It seems to work best if the project directory is at the root in vscode explorer, and the extension is enabled for the workspace only. Otherwise the language server will throw errors on other, non-deno projects in the.
 
 ### Using Make
@@ -25,7 +37,7 @@ The following options are off by default and enabled when defined:
 
 - `VERBOSE` - Disables the `.SILENT` special target, which prevents make from echoing the receipe steps as it runs.
 - `KEEP_ALL_IMGS` - Skips the portion of `make clean` which deletes container images, including base images.
-- `KEEP_BASE_IMGS` - Skips the portion of `make clean` which deletes base container images. (i.e `postgres:16`,`deno:latest`)
+- `KEEP_BASE_IMGS` - Skips the portion of `make clean` which deletes base container images. (i.e `postgres:16`,`deno:latest`,`node:latest`)
 
 ### Tests
 #### Database unit testing
@@ -35,3 +47,7 @@ Database unit tests use the pgTAP framework and can be found in `./database/test
 #### Deno API unit testing
 
 API tests are performed by deno's built in testing framework. superoak is used to run the app and mock requests. `make deno-tests` will run the tests in a container.
+
+#### Angular web client unit testing
+
+Web client tests are performed by the jasmine/karma testing frameworks angular installs. `make ng-tests` will run the test server in a container. Browse to http://localhost:9876 to run the tests and view the results.

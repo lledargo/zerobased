@@ -14,8 +14,10 @@ clean:
 #containers
 	podman rm -f zb-pgtap-test
 	podman rm -f zb-deno-test
+	podman rm -f zb-ng-test
 	podman rm -f zbdb-dev
 	podman rm -f zbapi-dev
+	podman rm -f zbweb-dev
 #pods
 	podman pod rm -f zb-dev
 #persistent volumes
@@ -24,11 +26,14 @@ clean:
 #images
 ifndef KEEP_ALL_IMGS
 	podman rmi -f localhost/pgtap:latest
+	podman rmi -f localhost/ng:latest
 ifndef KEEP_BASE_IMGS
 	if [[ $$(podman ps -a | grep "docker.io/library/postgres:16") == "" ]]; \
 	then podman rmi -f docker.io/library/postgres:16; fi
 	if [[ $$(podman ps -a | grep "docker.io/denoland/deno:latest") == "" ]]; \
 	then podman rmi -f docker.io/denoland/deno:latest; fi
+	if [[ $$(podman ps -a | grep "docker.io/library/node:latest") == "" ]]; \
+	then podman rmi -f docker.io/library/node:latest; fi
 endif
 endif
 # files and directories
@@ -46,12 +51,20 @@ else
 	echo "using existing pgtap container image"
 endif
 
+.PHONY: ng-image
+ng-image:
+ifeq ($(shell podman images -q localhost/ng:latest),)
+	podman build -t ng -f ./development/containers/ng.dockerfile
+else
+	echo "using existing ng container image"
+endif
+
 ###
 #test receipes
 ###
 
 .PHONY: tests
-tests: pgtap-tests deno-tests
+tests: pgtap-tests deno-tests ng-tests
 
 .PHONY: pgtap-tests
 pgtap-tests: pgtap-image
@@ -84,12 +97,23 @@ deno-tests:
     denoland/deno:latest \
 		deno test --allow-net
 
+.PHONY: ng-tests 
+ng-tests: ng-image
+	podman run \
+		--rm --interactive --tty \
+		--name=zb-ng-test \
+		--volume ./web:/app:Z \
+		--workdir /app \
+		-p 9876:9876 \
+		localhost/ng:latest \
+		ng test --browsers ChromeHeadless 
+
 ###
 #dev receipes
 ###
 
 .PHONY: dev-deploy
-dev-deploy: dev-pod dev-db dev-api
+dev-deploy: dev-pod dev-db dev-api dev-web
 
 .PHONY: dev-pod
 dev-pod:
@@ -125,3 +149,14 @@ dev-api: dev-pod
 		-e PGPORT=5432 \
     denoland/deno:latest \
     deno run --watch --allow-net --allow-env --allow-read server.ts
+
+.PHONY: dev-web
+dev-web: ng-image dev-pod
+	podman run \
+		--rm --detach \
+		--pod=zb-dev \
+		--name=zbweb-dev \
+		--volume ./web:/app:Z \
+		--workdir /app \
+		localhost/ng:latest \
+		ng serve --host 0.0.0.0

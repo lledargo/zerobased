@@ -10,3 +10,8 @@ Deno.test("options test", async () => {
   const request = await superoak(app);
   await request.options("/").expect(200).expect('Access-Control-Allow-Methods','GET, POST, DELETE, PATCH, OPTIONS');
 });
+
+Deno.test("get accounts", async () => {
+  const request = await superoak(app);
+  await request.get("/accounts").expect(200);//.expect("{\"meta\":{\"code\":200,\"status\":\"Ok\"},\"data\":[]}");
+});

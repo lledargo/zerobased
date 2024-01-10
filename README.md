@@ -46,7 +46,7 @@ Database unit tests use the pgTAP framework and can be found in `./database/test
 
 #### Deno API unit testing
 
-API tests are performed by deno's built in testing framework. superoak is used to run the app and mock requests. `make deno-tests` will run the tests in a container.
+API tests are performed by deno's built in testing framework. superoak is used to run the app and mock requests. `make deno-tests` will run the tests in a container against a test database container in the same pod.
 
 #### Angular web client unit testing
 

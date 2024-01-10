@@ -13,12 +13,14 @@ default: dev-deploy
 clean:
 #containers
 	podman rm -f zb-pgtap-test
+	podman rm -f zb-deno-test-db
 	podman rm -f zb-deno-test
 	podman rm -f zb-ng-test
 	podman rm -f zbdb-dev
 	podman rm -f zbapi-dev
 	podman rm -f zbweb-dev
 #pods
+	podman pod rm -f zb-api-test
 	podman pod rm -f zb-dev
 #persistent volumes
 	if [[ $$(podman volume ls -qf name=zbdb-data) == "zbdb-data" ]]; \
@@ -88,14 +90,37 @@ pgtap-tests: pgtap-image
 
 .PHONY: deno-tests
 deno-tests:
+	podman run --rm --detach \
+		--pod=new:zb-api-test \
+		--name=zb-deno-test-db \
+		--volume ./database/:/scripts/:Z \
+		--env POSTGRES_USER=postgres \
+		--env POSTGRES_PASSWORD=testpass \
+		postgres:16
+
+	sleep 5
+	podman exec -it zb-deno-test-db psql -U postgres -Xf /scripts/dbinit.sql
+	sleep 5
+
 	podman run \
 		--rm --interactive --tty \
+		--pod=zb-api-test \
 		--name=zb-deno-test \
     --volume ./api:/app:Z \
     --volume ./api/.deno:/deno-dir:Z \
+		--volume ./common:/common:Z \
     --workdir /app \
+		-e PGUSER=zerobased \
+		-e PGDATABASE=zerobased \
+		-e PGHOST=localhost \
+		-e PGPASSWORD=testpass \
+		-e PGPORT=5432 \
     denoland/deno:latest \
-		deno test --allow-net
+		deno test --allow-net --allow-env --allow-read
+
+	podman rm -f zb-deno-test-db
+	podman rm -f zb-deno-test
+	podman pod rm -f zb-api-test
 
 .PHONY: ng-tests 
 ng-tests: ng-image
@@ -103,6 +128,7 @@ ng-tests: ng-image
 		--rm --interactive --tty \
 		--name=zb-ng-test \
 		--volume ./web:/app:Z \
+		--volume ./common:/common:Z \
 		--workdir /app \
 		-p 9876:9876 \
 		localhost/ng:latest \
@@ -141,6 +167,7 @@ dev-api: dev-pod
 		--name=zbapi-dev \
     --volume ./api:/app:Z \
     --volume ./api/.deno:/deno-dir:Z \
+		--volume ./common:/common:Z \
     --workdir /app \
     -e PGUSER=zerobased \
 		-e PGDATABASE=zerobased \
@@ -157,6 +184,7 @@ dev-web: ng-image dev-pod
 		--pod=zb-dev \
 		--name=zbweb-dev \
 		--volume ./web:/app:Z \
+		--volume ./common:/common:Z \
 		--workdir /app \
 		localhost/ng:latest \
 		ng serve --host 0.0.0.0

@@ -7,7 +7,10 @@ app.use(async (ctx, next) => {
   await next();
   console.log(Date.now()+" - "+ctx.request.method+" - "+ctx.request.headers.get("host")+ctx.request.url.pathname+" -- Res "+ctx.response.status);
 });
-
+app.use(async (ctx, next) => {
+  ctx.response.headers.set("Access-Control-Allow-Origin", "http://localhost:4200");
+  await next();
+});
 app.use(router.routes());
 app.use(router.allowedMethods());
 

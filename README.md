@@ -1,11 +1,21 @@
 # zerobased
-A zero based budgeting application
+A zero based budgeting application for the web. 
 
-## Configuration Notes
+zerobased is comprised of a postgresql database, a deno/oak api, and an angular web client. Well... someday it will be. For now we have most of the environment set up, and a build process for some rudimentary releases.
 
-### API
+Before the real work can begin:
+[x] Set up Postgres/Deno/Angular
+[x] Unit testing framework for all parts
+[x] Build process for releases
+[ ] Linting
 
-The API's postgresql connection can be configured with some environment variables:
+For now many things are in the air and subject to change.
+
+## Developement Notes
+
+### API database configuration
+
+The dev API's postgresql connection can be configured with some environment variables:
 
 - `PGDATABASE`
 - `PGHOST`
@@ -13,7 +23,21 @@ The API's postgresql connection can be configured with some environment variable
 - `PGPASSWORD`
 - `PGPORT`
 
-## Developement Notes
+The compiled release looks for ./db.json for a JSON with `ClientOptions` for the deno-postgres client:
+``` typescript
+interface ClientOptions {
+  applicationName?: string;
+  connection?: Partial<ConnectionOptions>;
+  database?: string;
+  hostname?: string;
+  host_type?: "tcp" | "socket";
+  options?: string | Record<string, string>;
+  password?: string;
+  port?: string | number;
+  tls?: Partial<TLSOptions>;
+  user?: string;
+}
+```
 
 #### Deno and VSCode
 
@@ -23,11 +47,12 @@ It seems to work best if the project directory is at the root in vscode explorer
 ### Using Make
 #### Receipes overview
 
-Some make receipes are defined to help with the development workflow. The default receipe is `dev-deploy`.
+Some make receipes are defined to help with the development workflow. The default receipe is `dev-deploy`. The Makefile leverages podman heavily for running dev and testing environments, as well as for building several parts of the app.
 
 - `clean` - removes any thing make may have created (i.e. contianers, pods, container images and volumes, files/directories)
 - `tests` - Runs all tests (Deno, and Postgres).
-- `dev-deploy` - Provisions a pod (zb-dev) with a development database in a container (zbdb-dev), and a development API in a container (zbapi-dev).
+- `dev-deploy` - Provisions a pod (zb-dev) with a development database in a container (zbdb-dev), a development API in a container (zbapi-dev), and a development angular server in a container (zbweb-dev).
+- `release` - Creates a `release` directory with the compiled deno server, built angular app, a dbinit.sql, and licenses.
 
 #### Make options
 

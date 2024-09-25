@@ -32,14 +32,15 @@ ifndef KEEP_ALL_IMGS
 ifndef KEEP_BASE_IMGS
 	if [[ $$(podman ps -a | grep "docker.io/library/postgres:16") == "" ]]; \
 	then podman rmi -f docker.io/library/postgres:16; fi
-	if [[ $$(podman ps -a | grep "docker.io/denoland/deno:latest") == "" ]]; \
-	then podman rmi -f docker.io/denoland/deno:latest; fi
+	if [[ $$(podman ps -a | grep "docker.io/denoland/deno") == "" ]]; \
+	then podman rmi -f docker.io/denoland/deno; fi
 	if [[ $$(podman ps -a | grep "docker.io/library/node:latest") == "" ]]; \
 	then podman rmi -f docker.io/library/node:latest; fi
 endif
 endif
 # files and directories
 	rm -rf development/var
+	rm -rf release
 
 ###
 #container image receipes
@@ -115,7 +116,7 @@ deno-tests:
 		-e PGHOST=localhost \
 		-e PGPASSWORD=testpass \
 		-e PGPORT=5432 \
-    denoland/deno:latest \
+    denoland/deno:1.46.3 \
 		deno test --allow-net --allow-env --allow-read
 
 	podman rm -f zb-deno-test-db
@@ -174,7 +175,8 @@ dev-api: dev-pod
 		-e PGHOST=localhost \
 		-e PGPASSWORD=testpass \
 		-e PGPORT=5432 \
-    denoland/deno:latest \
+		-e ZB_CLIENT=http://localhost:4200 \
+    denoland/deno:1.46.3 \
     deno run --watch --allow-net --allow-env --allow-read server.ts
 
 .PHONY: dev-web
@@ -186,5 +188,22 @@ dev-web: ng-image dev-pod
 		--volume ./web:/app:Z \
 		--volume ./common:/common:Z \
 		--workdir /app \
+		-e ZB_API=http://localhost:8080 \
 		localhost/ng:latest \
-		ng serve --host 0.0.0.0
+		ng serve --configuration development --host 0.0.0.0
+
+.PHONY: release
+release:
+	if [[ ! -d ./release ]]; then mkdir release; fi
+	if [[ ! -d ./release/static ]]; then mkdir release/static; fi
+	if [[ ! -d ./release/licenses ]]; then mkdir release/licenses; fi
+	if [[ ! -d ./release/database ]]; then mkdir release/database; fi
+
+	cp database/dbinit.sql release/database/dbinit.sql	
+	cp LICENSE release/licenses/zerobased-LICENSE
+#build ng web-client
+	cd web && ng build
+	cp web/dist/zerobased/browser/* release/static/
+	cp web/dist/zerobased/3rdpartylicenses.txt release/licenses/
+#compile deno server
+	deno compile --allow-env --allow-net --allow-read --output release/zerobased api/server.ts

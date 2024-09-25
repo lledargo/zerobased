@@ -3,4 +3,6 @@ local.mk
 
 api/.deno/*
 
+release/
+
 !.gitkeep

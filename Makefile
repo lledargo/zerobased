@@ -192,6 +192,11 @@ dev-web: ng-image dev-pod
 		localhost/ng:latest \
 		ng serve --configuration development --host 0.0.0.0
 
+.PHONY: lint
+lint:
+	deno lint api/*
+	cd web; ng lint
+
 .PHONY: release
 release:
 	if [[ ! -d ./release ]]; then mkdir release; fi
